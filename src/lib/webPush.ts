@@ -42,7 +42,9 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     try {
       // Register (or update) the same path every time so a service worker left
       // over from the previous OneSignal integration is replaced promptly.
-      return await navigator.serviceWorker.register(SW_PATH, { scope: SW_SCOPE });
+      const registration = await navigator.serviceWorker.register(SW_PATH, { scope: SW_SCOPE });
+      registration.update().catch(() => undefined);
+      return registration;
     } catch (error) {
       console.warn('Service worker registration failed:', error);
       registrationPromise = null;

@@ -21,6 +21,7 @@ import { ToastHost } from './ToastHost';
 import { RoomNotifications } from './RoomNotifications';
 import { Group, User } from '../types';
 import { getNotificationSettings, showToast, playNotificationSound } from '../utils/notificationService';
+import { radarAudio } from '../utils/radarAudio';
 import { ensureProfile, logPoop } from '../lib/api';
 import { signOut } from '../lib/auth';
 import { getSupabase } from '../lib/supabase/client';
@@ -112,6 +113,7 @@ export default function PoopApp() {
 
   useEffect(() => {
     registerServiceWorker();
+    radarAudio.preloadFart();
 
     const params = new URLSearchParams(window.location.search);
     const groupCode = params.get('group') || params.get('join');
@@ -208,6 +210,8 @@ export default function PoopApp() {
     const handleServiceWorkerMessage = (event: MessageEvent) => {
       if (event.data?.type === 'poop:push-received') {
         playNotificationSound('fart');
+      } else if (event.data?.type === 'poop:push-subscription-change') {
+        if (getNotificationSettings().webPushEnabled) syncWebPushSubscription();
       }
     };
 

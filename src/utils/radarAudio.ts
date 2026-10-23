@@ -36,127 +36,34 @@ class RadarAudioEngine {
     return this.isMuted;
   }
 
-  // Cartoonish subtle, humorous "Plop!" sound for poop drops
-  public playPlop(variant: 'standard' | 'deep' | 'bubbly' = 'standard') {
-    const ctx = this.getContext();
-    if (!ctx) return;
+  private fartAudio: HTMLAudioElement | null = null;
 
-    try {
-      const now = ctx.currentTime;
-      
-      // Primary bubble oscillator (drops pitch rapidly)
-      const osc1 = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-
-      // Secondary body/harmonic oscillator for cartoon roundness
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-
-      // Low resonance pop
-      const startFreq = variant === 'deep' ? 380 : variant === 'bubbly' ? 620 : 490;
-      const endFreq = variant === 'deep' ? 95 : variant === 'bubbly' ? 160 : 130;
-
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(startFreq, now);
-      osc1.frequency.exponentialRampToValueAtTime(endFreq, now + 0.11);
-
-      gain1.gain.setValueAtTime(0.32, now);
-      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
-
-      osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(startFreq * 1.5, now);
-      osc2.frequency.exponentialRampToValueAtTime(endFreq * 0.8, now + 0.08);
-
-      gain2.gain.setValueAtTime(0.16, now);
-      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
-
-      osc1.connect(gain1);
-      gain1.connect(ctx.destination);
-
-      osc2.connect(gain2);
-      gain2.connect(ctx.destination);
-
-      osc1.start(now);
-      osc1.stop(now + 0.13);
-
-      osc2.start(now);
-      osc2.stop(now + 0.09);
-    } catch {
-      // ignore
+  private getFartAudio(): HTMLAudioElement | null {
+    if (typeof window === 'undefined') return null;
+    if (!this.fartAudio) {
+      this.fartAudio = new Audio('/mikrotop22-furtz22-198542.mp3');
+      this.fartAudio.preload = 'auto';
+      this.fartAudio.volume = 0.9;
     }
+    return this.fartAudio;
   }
 
-  // Cartoon fart for the "I just pooped" button and poop notifications.
+  public preloadFart() {
+    this.getFartAudio()?.load();
+  }
+
+  // Real fart sound for the "I just pooped" button and in-app notifications.
   public playFart() {
-    const ctx = this.getContext();
-    if (!ctx) return;
+    if (this.isMuted) return;
+
+    const audio = this.getFartAudio();
+    if (!audio) return;
 
     try {
-      const now = ctx.currentTime;
-      const duration = 0.8;
-
-      const master = ctx.createGain();
-      master.gain.setValueAtTime(0.0001, now);
-      master.gain.exponentialRampToValueAtTime(0.42, now + 0.02);
-      master.gain.setValueAtTime(0.38, now + duration * 0.45);
-      master.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-      master.connect(ctx.destination);
-
-      // Low, flappy body. The LFO makes the classic motorboat vibration.
-      const lowpass = ctx.createBiquadFilter();
-      lowpass.type = 'lowpass';
-      lowpass.frequency.setValueAtTime(720, now);
-      lowpass.frequency.exponentialRampToValueAtTime(240, now + duration);
-      lowpass.Q.setValueAtTime(8, now);
-      lowpass.connect(master);
-
-      const body = ctx.createOscillator();
-      body.type = 'sawtooth';
-      body.frequency.setValueAtTime(84, now);
-      body.frequency.exponentialRampToValueAtTime(56, now + duration);
-
-      const flutter = ctx.createOscillator();
-      flutter.type = 'sine';
-      flutter.frequency.setValueAtTime(11.5, now);
-      const flutterDepth = ctx.createGain();
-      flutterDepth.gain.setValueAtTime(19, now);
-      flutter.connect(flutterDepth);
-      flutterDepth.connect(body.frequency);
-
-      body.connect(lowpass);
-      body.start(now);
-      body.stop(now + duration);
-      flutter.start(now);
-      flutter.stop(now + duration);
-
-      // Damp noise adds the wet, sputtering texture.
-      const noiseBuffer = ctx.createBuffer(
-        1,
-        Math.max(1, Math.floor(ctx.sampleRate * duration)),
-        ctx.sampleRate
-      );
-      const samples = noiseBuffer.getChannelData(0);
-      for (let index = 0; index < samples.length; index += 1) {
-        const time = index / ctx.sampleRate;
-        const gate = 0.35 + 0.65 * Math.abs(Math.sin(Math.PI * 12 * time));
-        samples[index] = (Math.random() * 2 - 1) * gate;
-      }
-
-      const noise = ctx.createBufferSource();
-      noise.buffer = noiseBuffer;
-      const bandpass = ctx.createBiquadFilter();
-      bandpass.type = 'bandpass';
-      bandpass.frequency.setValueAtTime(210, now);
-      bandpass.frequency.exponentialRampToValueAtTime(110, now + duration);
-      bandpass.Q.setValueAtTime(1.3, now);
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.18, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-      noise.connect(bandpass);
-      bandpass.connect(noiseGain);
-      noiseGain.connect(master);
-      noise.start(now);
-      noise.stop(now + duration);
+      audio.currentTime = 0;
+      audio.play().catch(() => {
+        // Browsers may block audio until the user interacts with the page.
+      });
     } catch {
       // ignore
     }

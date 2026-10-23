@@ -1,9 +1,10 @@
 // Native Web Push (VAPID). The browser push service wakes this worker and the
 // push event below renders the notification.
-const CACHE_NAME = 'poop-lol-v7';
+const CACHE_NAME = 'poop-lol-v8';
 const POOP_ICON = '/pwa-192x192.png';
+const FART_SOUND = '/mikrotop22-furtz22-198542.mp3';
 const OFFLINE_URL = '/offline';
-const PRECACHE = ['/', '/offline', '/manifest.webmanifest', '/pwa-192x192.png', '/pwa-512x512.png', '/favicon.ico'];
+const PRECACHE = ['/', '/offline', '/manifest.webmanifest', '/pwa-192x192.png', '/pwa-512x512.png', '/favicon.ico', FART_SOUND];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -88,15 +89,20 @@ self.addEventListener('push', (event) => {
 
   event.waitUntil(
     (async () => {
-      const clients = await self.clients.matchAll({
-        type: 'window',
-        includeUncontrolled: true,
-      });
-      const visibleClients = clients.filter(
-        (client) => client.visibilityState === 'visible'
-      );
+      let visibleClients = [];
+      try {
+        const clients = await self.clients.matchAll({
+          type: 'window',
+          includeUncontrolled: true,
+        });
+        visibleClients = clients.filter(
+          (client) => client.visibilityState === 'visible'
+        );
+      } catch {
+        // Even if the client lookup fails, the notification must still show.
+      }
 
-      await self.registration.showNotification(title, {
+      const options = {
         body,
         // Always use the local poop logo. The payload's absolute URL can point
         // at a domain that is not deployed yet (for example during tunnel tests).
@@ -105,14 +111,50 @@ self.addEventListener('push', (event) => {
         tag: payload.tag || 'poop-room',
         renotify: true,
         silent: visibleClients.length > 0,
+        vibrate: [200, 100, 200],
+        timestamp: Date.now(),
         data: { ...data, url: targetUrl },
-      });
+      };
+
+      try {
+        await self.registration.showNotification(title, options);
+      } catch {
+        // Some browsers reject unsupported options; retry with the minimum.
+        await self.registration.showNotification(title, {
+          body,
+          icon: POOP_ICON,
+          badge: POOP_ICON,
+          tag: payload.tag || 'poop-room',
+          data: { ...data, url: targetUrl },
+        });
+      }
 
       for (const client of visibleClients) {
         client.postMessage({
           type: 'poop:push-received',
           payload: { title, body, data },
         });
+      }
+    })()
+  );
+});
+
+// If the browser rotates the push subscription, ask an open client to save it
+// again. A closed PWA cannot authenticate this request, so it is synced on the
+// next app launch instead.
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil(
+    (async () => {
+      try {
+        const clients = await self.clients.matchAll({
+          type: 'window',
+          includeUncontrolled: true,
+        });
+        for (const client of clients) {
+          client.postMessage({ type: 'poop:push-subscription-change' });
+        }
+      } catch {
+        // ignore
       }
     })()
   );
