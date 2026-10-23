@@ -1,6 +1,25 @@
 import { AppError, ensureProfile, normalizeError } from './api';
 import { getAppUrl, getSupabase, isSupabaseConfigured } from './supabase/client';
 
+// Supabase copies user_metadata into the session/JWT, and @supabase/ssr stores
+// that session in cookies. Data URIs and other large values must stay in the
+// profiles table instead; a single avatar can otherwise exceed Vercel's 16 KB
+// request-header limit.
+const MAX_AUTH_AVATAR_LENGTH = 2048;
+
+function compactAvatarForAuth(avatar?: string): string {
+  const value = (avatar ?? '').trim();
+  if (!value) return '';
+  if (
+    value.startsWith('data:') ||
+    value.startsWith('blob:') ||
+    value.length > MAX_AUTH_AVATAR_LENGTH
+  ) {
+    return '';
+  }
+  return value;
+}
+
 function assertConfigured() {
   if (!isSupabaseConfigured()) {
     throw new AppError(
@@ -38,7 +57,7 @@ export async function signUpWithEmail(input: {
         username: input.username,
         country: input.country,
         country_code: input.countryCode,
-        avatar: input.avatar ?? '',
+        avatar: compactAvatarForAuth(input.avatar),
       },
     },
   });

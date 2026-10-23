@@ -304,6 +304,11 @@ export function getDiceBearAvatarSvg(seed: string = 'poop', style: string = 'too
   }
 }
 
+export function getDiceBearAvatarUrl(seed: string = 'poop'): string {
+  const cleanSeed = (seed || 'poop').trim().toLowerCase();
+  return `https://api.dicebear.com/9.x/toon-head/svg?seed=${encodeURIComponent(cleanSeed)}&backgroundColor=fde047,fef08a,fed7aa,bfdbfe,bbf7d0,fbcfe8,ddd6fe`;
+}
+
 export function getDiceBearAvatar(seed: string = 'poop', style: string = 'toon-head'): string {
   const cleanSeed = (seed || 'poop').trim().toLowerCase();
   try {
@@ -314,7 +319,7 @@ export function getDiceBearAvatar(seed: string = 'poop', style: string = 'toon-h
     return avatar.toDataUri();
   } catch (e) {
     console.error('Error generating DiceBear avatar dataUri:', e);
-    return `https://api.dicebear.com/9.x/toon-head/svg?seed=${encodeURIComponent(cleanSeed)}&backgroundColor=fde047,fef08a,fed7aa,bfdbfe,bbf7d0,fbcfe8,ddd6fe`;
+    return getDiceBearAvatarUrl(cleanSeed);
   }
 }
 

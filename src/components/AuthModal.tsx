@@ -24,7 +24,7 @@ import {
 import { User } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { CountryFlag } from './CountryFlag';
-import { getDiceBearAvatar } from '../utils/avatarUtils';
+import { getDiceBearAvatarUrl } from '../utils/avatarUtils';
 import { COUNTRIES } from '../utils/countries';
 import { ensureProfile } from '../lib/api';
 import { signInWithEmail, signInWithGoogle, signUpWithEmail } from '../lib/auth';
@@ -272,7 +272,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const profile = await ensureProfile();
         authenticatedUser = { ...profile.user, isRegistered: true };
       } else {
-        const defaultAvatar = getDiceBearAvatar(userDisplay, 'toon-head');
+        // Keep auth metadata tiny: Supabase copies it into the session/JWT cookie.
+        const defaultAvatar = getDiceBearAvatarUrl(userDisplay);
         const result = await signUpWithEmail({
           email: cleanEmail,
           password: cleanPass,
