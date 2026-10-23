@@ -1,0 +1,3 @@
+-- poop.lol starts with an empty database.
+-- User accounts are created by Supabase Auth (email/password or Google OAuth).
+-- The first room is created by the user from the app.
