@@ -22,7 +22,8 @@ export function getSupabase(): SupabaseClient {
     if (!browserClient) {
       browserClient = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_KEY
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_KEY,
+        { cookieEncoding: 'raw' }
       );
     }
     return browserClient;
@@ -31,7 +32,8 @@ export function getSupabase(): SupabaseClient {
   if (!browserClient) {
     browserClient = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_KEY
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_KEY,
+      { cookieEncoding: 'raw' }
     );
   }
 
